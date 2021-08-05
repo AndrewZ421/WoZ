@@ -3,8 +3,10 @@
     <v-row>
       <v-col id="chat" cols="6">
         <v-card
+          id="chatbox"
           elevation="0"
           class="overflow-y-auto overflow-x-hidden"
+          min-height="500px"
           max-height="800px"
         >
           <v-row>
@@ -15,14 +17,14 @@
               <h3 class="text-center">Wizord</h3>
             </v-col>
           </v-row>
-          <v-timeline class="ma-4" reverse="reverse">
+          <v-timeline class="ma-4">
             <v-timeline-item
               v-for="timeLine in timeLines"
               :key="timeLine.id"
               class="text-left"
               hide-dot="hideDot"
-              :left="timeLine.align == 'r' ? true : false"
-              :right="timeLine.align == 'l' ? true : false"
+              :left="timeLine.align == 'l' ? true : false"
+              :right="timeLine.align == 'r' ? true : false"
             >
               <v-alert
                 elevation="2"
@@ -42,7 +44,7 @@
               >
                 <draggable
                   v-model="myArray"
-                  group="quick_reply"
+                  group="conversion"
                   @start="drag = true"
                   @end="drag = false"
                 >
@@ -76,7 +78,7 @@
       <v-col id="box" cols="3">
         <v-row>
           <v-col cols="8">
-            <h3 class="text-center mt-1">Conversion box</h3>
+            <h3 class="text-center mt-1">Quick Replies</h3>
           </v-col>
           <v-spacer></v-spacer>
           <v-col>
@@ -87,7 +89,7 @@
               dark
               x-samll
               color="#000000"
-              @click="addCount"
+              @click="addReplyCount"
             >
               <v-icon dark> mdi-plus </v-icon>
             </v-btn>
@@ -96,11 +98,11 @@
         <v-card
           outlined
           class="overflow-y-auto overflow-x-hidden mt-2"
-          max-height="800px"
+          height="345px"
         >
           <draggable
             v-model="myArray"
-            :group="{ name: 'quick_reply', pull: 'clone', put: false }"
+            :group="{ name: 'conversion', pull: 'clone', put: false }"
             :clone="cloneDog"
             @start="drag = true"
             @end="drag = false"
@@ -114,12 +116,12 @@
           </draggable>
           <draggable
             v-model="myArray"
-            :group="{ name: 'quick_reply' }"
+            :group="{ name: 'conversion' }"
             @start="drag = true"
             @end="drag = false"
           >
             <v-text-field
-              v-for="n in itemcount"
+              v-for="n in replycount"
               :key="n"
               clearable
               solo
@@ -129,9 +131,35 @@
             >
             </v-text-field>
           </draggable>
+        </v-card>
+        <br>
+        <v-row>
+          <v-col cols="8">
+            <h3 class="text-center mt-1">Points</h3>
+          </v-col>
+          <v-spacer></v-spacer>
+          <v-col>
+            <v-btn
+              class="fab mx-2"
+              icon
+              outlined
+              dark
+              x-samll
+              color="#000000"
+              @click="addPointCount"
+            >
+              <v-icon dark> mdi-plus </v-icon>
+            </v-btn>
+          </v-col>
+        </v-row>
+        <v-card
+          outlined
+          class="overflow-y-auto overflow-x-hidden mt-2"
+          height="350px"
+        >
           <draggable
             v-model="myArray"
-            :group="{ name: 'quick_reply', pull: 'clone', put: false }"
+            :group="{ name: 'conversion'}"
             :clone="cloneDog"
             @start="drag = true"
             @end="drag = false"
@@ -142,6 +170,16 @@
             <v-alert elevation="2" class="ma-4" color="#E5E4DF" rounded>
               Point 2
             </v-alert>
+            <v-text-field
+              v-for="n in pointcount"
+              :key="n"
+              clearable
+              solo
+              class="ml-4 mr-4 mt-4 mb-n7"
+              filled
+              background-color="#E5E4DF"
+            >
+            </v-text-field>
           </draggable>
         </v-card>
       </v-col>
@@ -151,7 +189,7 @@
         <v-alert
           outlined
           class="overflow-y-auto overflow-x-hidden mt-2"
-          height="350"
+          height="350px"
         >
           Log for wizords
         </v-alert>
@@ -183,8 +221,8 @@
 
 <script>
 import draggable from "vuedraggable";
-
-var itemcount = 0;
+var replycount = 0;
+var pointcount = 0;
 
 export default {
   name: "Conversation",
@@ -193,20 +231,34 @@ export default {
   },
   data() {
     return {
-      itemcount,
+      replycount,
+      pointcount,
       message: "",
       timeLines: [],
     };
   },
   methods: {
-    addCount() {
-      this.itemcount += 1;
+    addReplyCount() {
+      this.replycount += 1;
+    },
+    addPointCount() {
+      this.pointcount += 1;
+    },
+    scrollToBottom() {
+      const container = this.$el.querySelector("#chatbox");
+      container.scrollTop = container.scrollHeight;
     },
     sendMsg() {
       if (this.message != "") {
         if (
           this.timeLines.length &&
           this.timeLines[this.timeLines.length - 1].align == "r" &&
+          document
+            .getElementById(
+              `content_${this.timeLines[this.timeLines.length - 1].id}`
+            )
+            .firstElementChild.firstElementChild.textContent.length < 3 &&
+
           this.timeLines[this.timeLines.length - 1].content == ""
         ) {
           this.timeLines.pop();
@@ -227,11 +279,11 @@ export default {
         if (
           this.timeLines.length &&
           this.timeLines[this.timeLines.length - 1].align == "r" &&
-          !document
+          document
             .getElementById(
               `content_${this.timeLines[this.timeLines.length - 1].id}`
             )
-            .firstElementChild.firstElementChild.hasChildNodes() &&
+            .firstElementChild.firstElementChild.textContent.length < 3 &&
           this.timeLines[this.timeLines.length - 1].content == ""
         ) {
           this.timeLines.pop();
@@ -261,6 +313,7 @@ export default {
             order: this.timeLines.length + 1,
           });
         }
+        this.scrollToBottom();
       },
       deep: true,
     },
