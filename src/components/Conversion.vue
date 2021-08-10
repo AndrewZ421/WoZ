@@ -6,7 +6,6 @@
           id="chatbox"
           elevation="0"
           class="overflow-y-auto overflow-x-hidden"
-          min-height="500px"
           max-height="800px"
         >
           <v-row>
@@ -19,7 +18,7 @@
           </v-row>
           <v-timeline class="ma-4">
             <v-timeline-item
-              v-for="timeLine in timeLines"
+              v-for="timeLine in allTimeLines"
               :key="timeLine.id"
               class="text-left"
               hide-dot="hideDot"
@@ -38,22 +37,33 @@
                 elevation="2"
                 color="#E5E4DF"
                 rounded
-                v-if="timeLine.align == 'r'"
+                v-if="timeLine.align == 'r' && timeLine.sent"
                 min-height="55px"
                 :id="'content_' + timeLine.id"
               >
-                <draggable
-                  v-model="myArray"
-                  group="conversion"
-                  @start="drag = true"
-                  @end="drag = false"
-                >
-                  {{ timeLine.content }}
-                </draggable>
+                {{ timeLine.content }}
               </v-alert>
+              <v-textarea
+                solo
+                backgroundColor="#E5E4DF"
+                counter
+                v-if="timeLine.align == 'r' && !timeLine.sent"
+                :id="'content_' + timeLine.id"
+                :value = timeLine.content
+              >
+              </v-textarea>
             </v-timeline-item>
           </v-timeline>
         </v-card>
+        <v-btn
+          class="float-right mr-4"
+          elevation="2"
+          color="#CDE589"
+          @click="play()"
+        >
+          Play
+        </v-btn>
+        <br><br>
         <h3 class="text-center">User (for test)</h3>
         <v-textarea
           label="Message"
@@ -89,48 +99,29 @@
               dark
               x-samll
               color="#000000"
-              @click="addReplyCount"
+              @click="addReply"
             >
               <v-icon dark> mdi-plus </v-icon>
             </v-btn>
           </v-col>
         </v-row>
         <v-card
+          id="replybox"
           outlined
           class="overflow-y-auto overflow-x-hidden mt-2"
           height="345px"
         >
-          <draggable
-            v-model="myArray"
-            :group="{ name: 'conversion', pull: 'clone', put: false }"
-            :clone="cloneDog"
-            @start="drag = true"
-            @end="drag = false"
+          <v-alert
+            v-for="reply in allReplies"
+            :key="reply.id"
+            elevation="2"
+            class="ma-4"
+            color="#CDE589"
+            rounded
+            @dblclick="sendReply"
           >
-            <v-alert elevation="2" class="ma-4" color="#CDE589" rounded>
-              Okay, I got it.
-            </v-alert>
-            <v-alert elevation="2" class="ma-4" color="#CDE589" rounded>
-              Sorry, please speak again.
-            </v-alert>
-          </draggable>
-          <draggable
-            v-model="myArray"
-            :group="{ name: 'conversion' }"
-            @start="drag = true"
-            @end="drag = false"
-          >
-            <v-text-field
-              v-for="n in replycount"
-              :key="n"
-              clearable
-              solo
-              class="ml-4 mr-4 mt-4 mb-n7"
-              filled
-              background-color="#CDE589"
-            >
-            </v-text-field>
-          </draggable>
+            {{reply.content}}
+          </v-alert>
         </v-card>
         <br>
         <v-row>
@@ -146,41 +137,29 @@
               dark
               x-samll
               color="#000000"
-              @click="addPointCount"
+              @click="addPoint"
             >
               <v-icon dark> mdi-plus </v-icon>
             </v-btn>
           </v-col>
         </v-row>
         <v-card
+          id="pointbox"
           outlined
           class="overflow-y-auto overflow-x-hidden mt-2"
           height="350px"
         >
-          <draggable
-            v-model="myArray"
-            :group="{ name: 'conversion'}"
-            :clone="cloneDog"
-            @start="drag = true"
-            @end="drag = false"
+          <v-alert
+            v-for="point in allPoints"
+            :key="point.id"
+            elevation="2"
+            class="ma-4"
+            color="#E5E4DF"
+            rounded
+            @dblclick="sendPoint"
           >
-            <v-alert elevation="2" class="ma-4" color="#E5E4DF" rounded>
-              Point 1
-            </v-alert>
-            <v-alert elevation="2" class="ma-4" color="#E5E4DF" rounded>
-              Point 2
-            </v-alert>
-            <v-text-field
-              v-for="n in pointcount"
-              :key="n"
-              clearable
-              solo
-              class="ml-4 mr-4 mt-4 mb-n7"
-              filled
-              background-color="#E5E4DF"
-            >
-            </v-text-field>
-          </draggable>
+            {{point.content}}
+          </v-alert>
         </v-card>
       </v-col>
       <v-spacer></v-spacer>
@@ -197,7 +176,7 @@
         <h3 class="text-center">WhiteBoard</h3>
         <v-textarea
           label="Notes"
-          v-model="message"
+          v-model="logger_message"
           outlined
           no-resize
           counter
@@ -220,100 +199,202 @@
 </template>
 
 <script>
-import draggable from "vuedraggable";
-var replycount = 0;
-var pointcount = 0;
 
 export default {
   name: "Conversation",
-  components: {
-    draggable,
-  },
+  components: {},
   data() {
     return {
-      replycount,
-      pointcount,
       message: "",
-      timeLines: [],
+      allTimeLines: [],
+      allReplies: [],
+      allPoints: [],
     };
   },
+  created:function(){
+    if (this.allTimeLines.length == 0) {
+      this.allTimeLines.push({
+        id: this.allTimeLines.length
+          ? this.allTimeLines[this.allTimeLines.length - 1].id + 1
+          : 0,
+        content: "",
+        align: "r",
+        sent: false
+      });
+    }
+    this.allReplies.push({
+      content: "Okay, I got it.",
+    });
+    this.allReplies.push({
+      content: "Sorry, please speak again.",
+    });
+    this.allPoints.push({
+      id: this.allPoints.length
+        ? this.allPoints[this.allPoints.length - 1].id + 1
+        : 0, 
+      content: "Point 1",
+    });
+    this.allPoints.push({
+      id: this.allPoints.length
+        ? this.allPoints[this.allPoints.length - 1].id + 1
+        : 0, 
+      content: "Point 2",
+    });    
+  },
   methods: {
-    addReplyCount() {
-      this.replycount += 1;
-    },
-    addPointCount() {
-      this.pointcount += 1;
-    },
-    scrollToBottom() {
+    scrollToChatBoxBottom() {
       const container = this.$el.querySelector("#chatbox");
       container.scrollTop = container.scrollHeight;
     },
-    sendMsg() {
-      if (this.message != "") {
-        if (
-          this.timeLines.length &&
-          this.timeLines[this.timeLines.length - 1].align == "r" &&
-          document
-            .getElementById(
-              `content_${this.timeLines[this.timeLines.length - 1].id}`
-            )
-            .firstElementChild.firstElementChild.textContent.length < 3 &&
-
-          this.timeLines[this.timeLines.length - 1].content == ""
-        ) {
-          this.timeLines.pop();
-        }
-        this.timeLines.push({
-          id: this.timeLines.length
-            ? this.timeLines[this.timeLines.length - 1].id + 1
-            : 0,
-          content: this.message,
-          align: "r",
-          order: this.timeLines.length + 1,
+    scrollToReplyBoxBottom() {
+      const container = this.$el.querySelector("#replybox");
+      container.scrollTop = container.scrollHeight;
+    },
+    scrollToPointBoxBottom() {
+      const container = this.$el.querySelector("#pointbox");
+      container.scrollTop = container.scrollHeight;
+    },
+    addReply() {
+      var word = prompt("Add a new quick reply:");
+      if (word) {
+        this.allReplies.push({
+          content: word,
         });
-        this.message = "";
       }
     },
+    addPoint() {
+      var word = prompt("Add a new point:");
+      if (word) {
+        this.allPoints.push({
+          id: this.allPoints.length
+            ? this.allPoints[this.allPoints.length - 1].id + 1
+            : 0, 
+          content: word,
+        });
+      }
+    },
+    sendReply(event) {
+      var el = (event.target || event.srcElement)
+      var last = this.allTimeLines[this.allTimeLines.length - 1];
+      this.updateInput(last.id);
+      if (
+        this.allTimeLines.length &&
+        last.align == "r" &&
+        last.content == ""
+      ) {
+        this.allTimeLines.pop();
+      }
+      var index = this.allTimeLines.length ? this.allTimeLines.length - 1 : 0;
+      while (index > 0 && !this.allTimeLines[index].sent) {
+        this.allTimeLines[index].id += 1;
+        index -= 1;
+      }
+      var newTimeLine = {
+        id: this.allTimeLines.length
+          ? index + 1
+          : 0,
+        content: el.textContent,
+        align: "r",
+        sent: true
+      };
+      this.allTimeLines.splice(index + 1, 0, newTimeLine);
+    },
+    sendPoint(event) {
+      var el = (event.target || event.srcElement)
+      var last = this.allTimeLines[this.allTimeLines.length - 1];
+      this.updateInput(last.id);
+      if (
+        this.allTimeLines.length &&
+        last.align == "r" &&
+        last.content == ""
+      ) {
+        this.allTimeLines.pop();
+      }
+      var index = this.allTimeLines.length ? this.allTimeLines.length - 1 : 0;
+      while (index > 0 && !this.allTimeLines[index].sent) {
+        this.allTimeLines[index].id += 1;
+        index -= 1;
+      }
+      var newTimeLine = {
+        id: this.allTimeLines.length
+          ? index + 1
+          : 0,
+        content: el.textContent,
+        align: "r",
+        sent: true
+      };
+      this.allTimeLines.splice(index + 1, 0, newTimeLine);
+      this.deletePoint(el.textContent);
+    },
+    deletePoint(msg) {
+      for (var i = 0; i < this.allPoints.length; i++) {
+        if (this.allPoints[i].content.trim() == msg.trim()) {
+          this.allPoints.splice(i, 1);
+          this.updatePointsID();
+          break;
+        }
+      }
+    },
+    updatePointsID() {
+      for (var i = 0; i < this.allPoints.length; i++) {
+        this.allPoints[i].id = i;
+      }
+    },
+    updateInput(id) {
+      if (!this.allTimeLines[id].sent) {
+        this.allTimeLines[id].content = document.getElementById(`content_${this.allTimeLines[this.allTimeLines.length - 1].id}`).value;
+      }
+    },
+    sendMsg() {},
     sendUserMsg() {
       if (this.message != "") {
+        this.updateInput(this.allTimeLines.length - 1);
         if (
-          this.timeLines.length &&
-          this.timeLines[this.timeLines.length - 1].align == "r" &&
-          document
-            .getElementById(
-              `content_${this.timeLines[this.timeLines.length - 1].id}`
-            )
-            .firstElementChild.firstElementChild.textContent.length < 3 &&
-          this.timeLines[this.timeLines.length - 1].content == ""
+          this.allTimeLines.length &&
+          this.allTimeLines[this.allTimeLines.length - 1].align == "r" &&
+          this.allTimeLines[this.allTimeLines.length - 1].content == ""
         ) {
-          this.timeLines.pop();
+          this.allTimeLines.pop();
         }
-        this.timeLines.push({
-          id: this.timeLines.length
-            ? this.timeLines[this.timeLines.length - 1].id + 1
+        var index = this.allTimeLines.length ? this.allTimeLines.length - 1 : 0;
+        while (index > 0 && !this.allTimeLines[index].sent) {
+          this.allTimeLines[index].id += 1;
+          index -= 1;
+        }
+        var newTimeLine = {
+          id: this.allTimeLines.length
+            ? index + 1
             : 0,
           content: this.message,
           align: "l",
-          order: this.timeLines.length + 1,
-        });
+          sent: true
+        };
+        this.allTimeLines.splice(index + 1, 0, newTimeLine);
         this.message = "";
+      }
+    },
+    play() {
+      var last = this.allTimeLines[this.allTimeLines.length - 1];
+      if (last.align == "r" && !last.sent) {
+        this.updateInput(last.id);
+        last.sent = true;
       }
     },
   },
   watch: {
-    timeLines: {
+    allTimeLines: {
       handler() {
-        if (this.timeLines[this.timeLines.length - 1].align == "l") {
-          this.timeLines.push({
-            id: this.timeLines.length
-              ? this.timeLines[this.timeLines.length - 1].id + 1
+        if (this.allTimeLines[this.allTimeLines.length - 1].sent) {
+          this.allTimeLines.push({
+            id: this.allTimeLines.length
+              ? this.allTimeLines[this.allTimeLines.length - 1].id + 1
               : 0,
             content: "",
             align: "r",
-            order: this.timeLines.length + 1,
+            sent: false
           });
         }
-        this.scrollToBottom();
+        this.scrollToChatBoxBottom();
       },
       deep: true,
     },
