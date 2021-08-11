@@ -229,15 +229,9 @@ export default {
       content: "Sorry, please speak again.",
     });
     this.allPoints.push({
-      id: this.allPoints.length
-        ? this.allPoints[this.allPoints.length - 1].id + 1
-        : 0, 
       content: "Point 1",
     });
     this.allPoints.push({
-      id: this.allPoints.length
-        ? this.allPoints[this.allPoints.length - 1].id + 1
-        : 0, 
       content: "Point 2",
     });    
   },
@@ -266,9 +260,6 @@ export default {
       var word = prompt("Add a new point:");
       if (word) {
         this.allPoints.push({
-          id: this.allPoints.length
-            ? this.allPoints[this.allPoints.length - 1].id + 1
-            : 0, 
           content: word,
         });
       }
@@ -330,14 +321,8 @@ export default {
       for (var i = 0; i < this.allPoints.length; i++) {
         if (this.allPoints[i].content.trim() == msg.trim()) {
           this.allPoints.splice(i, 1);
-          this.updatePointsID();
           break;
         }
-      }
-    },
-    updatePointsID() {
-      for (var i = 0; i < this.allPoints.length; i++) {
-        this.allPoints[i].id = i;
       }
     },
     updateInput(id) {
